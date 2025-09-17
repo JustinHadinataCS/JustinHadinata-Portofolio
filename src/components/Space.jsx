@@ -169,14 +169,17 @@ export default function Space() {
       const deltaTime = currentTime - lastTime;
       lastTime = currentTime;
 
+      // This block handles logic that should be paused on hover.
       if (!isPausedRef.current) {
-        timeOffset += deltaTime;
+        timeOffset += deltaTime; // Only advance time when not paused.
 
         spheres.forEach((sphere, index) => {
+          // Pulsating and opacity changes for the central sphere.
           if (index === 0) {
             sphere.scale.setScalar(1.0 + 0.1 * Math.sin(timeOffset * 2));
             sphere.material.opacity = 0.6 + 0.3 * Math.sin(timeOffset * 3);
           } else {
+            // This is the orbital motion for the smaller spheres.
             const { orbitRadius, speed } = sphere.userData;
             sphere.userData.currentOrbitAngle += speed * deltaTime;
 
@@ -189,10 +192,14 @@ export default function Space() {
               0.6 + Math.sin(timeOffset * 3 + index) * 0.2
             );
           }
-          sphere.rotation.y += (0.01 + index * 0.002) * deltaTime * 60;
-          sphere.rotation.x += 0.003 * deltaTime * 60;
         });
       }
+
+      // This self-rotation logic is now outside the pause check and will run on every frame.
+      spheres.forEach((sphere, index) => {
+        sphere.rotation.y += (0.01 + index * 0.002) * deltaTime * 60;
+        sphere.rotation.x += 0.003 * deltaTime * 60;
+      });
 
       // Tooltip logic runs regardless of pause state
       if (hoveredSphereIndex !== null && tooltipRef.current) {
@@ -221,7 +228,6 @@ export default function Space() {
       renderer.render(scene, camera);
     };
 
-    // --- STARTUP AND CLEANUP ---
     init();
     animate();
 
