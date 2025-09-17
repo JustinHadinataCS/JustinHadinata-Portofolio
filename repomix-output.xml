@@ -53,28 +53,28 @@ import Space from "./Space";
 function HeroPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <nav className="flex justify-center items-center w-full space-x-5 py-4">
+      <nav className="flex justify-center items-center w-full space-x-8 ">
         <a>Home</a>
-        <a>Home</a>
-        <a>Home</a>
-        <a>Home</a>
-        <button className="px-4 py-1 bg-black text-white rounded-md text-center leading-normal">
-          Let's talk
+        <a>Projects</a>
+        <a>Skills</a>
+        <a>About</a>
+        <button className="px-6 py-2 bg-black text-white rounded-full text-center leading-normal">
+          Let's Talk
         </button>
       </nav>
-      <div className="flex-1 px-8 lg:px-16 pt-16 md:pt-24">
-        <div className="max-w-7xl mx-auto w-full">
-          <div className="flex">
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center mt-10">
-                <h1 className="text-8xl mb-2 font-bold">Hi, I'm Justin</h1>
-                <h2 className="text-5xl font-semibold">A Software Engineer</h2>
-              </div>
-            </div>
-            <div className="flex-1 flex items-center justify-center">
-              <Space />
-            </div>
+      <div className="flex-1 flex">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-left">
+            <h1 className="text-6xl lg:text-8xl mb-4 font-bold leading-tight">
+              Hi, I'm Justin
+            </h1>
+            <h2 className="text-3xl lg:text-4xl font-medium">
+              A Software Engineer
+            </h2>
           </div>
+        </div>
+        <div className="flex-1">
+          <Space />
         </div>
       </div>
     </div>
@@ -85,284 +85,262 @@ export default HeroPage;
 </file>
 
 <file path="Space.jsx">
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
+
+// Skill data remains the same
+const skillData = {
+  1: { name: "Frontend", skills: "React, TypeScript, Tailwind, Three.js" },
+  2: { name: "Backend", skills: "Node.js, Python, PostgreSQL, Docker" },
+  3: { name: "Database", skills: "PostgreSQL, MongoDB, Redis, SQL" },
+  4: { name: "DevOps", skills: "AWS, Docker, CI/CD, Kubernetes" },
+};
 
 export default function Space() {
   const canvasRef = useRef(null);
-  const sceneRef = useRef(null);
-  const rendererRef = useRef(null);
-  const spheresRef = useRef([]);
-  const animationIdRef = useRef(null);
-  const raycasterRef = useRef(new THREE.Raycaster());
-  const mouseRef = useRef(new THREE.Vector2());
-  const cameraRef = useRef(null);
+  const containerRef = useRef(null);
   const tooltipRef = useRef(null);
 
-  const [hoveredSphere, setHoveredSphere] = useState(null);
-
-  const skillData = {
-    1: { name: "Frontend", skills: "React, TypeScript, Tailwind, Three.js" },
-    2: { name: "Backend", skills: "Node.js, Python, PostgreSQL, Docker" },
-    3: { name: "Database", skills: "PostgreSQL, MongoDB, Redis, SQL" },
-    4: { name: "DevOps", skills: "AWS, Docker, CI/CD, Kubernetes" },
-    5: { name: "Tools", skills: "Git, VS Code, Linux, Figma" },
-    6: { name: "Soft Skills", skills: "Problem Solving, Team Lead, Agile" },
-  };
+  // Using a ref for the pause state to be accessible inside the animation loop
+  const isPausedRef = useRef(false);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    // Check if refs are available
+    if (!canvasRef.current || !containerRef.current) return;
 
-    // Scene setup
+    // A flag to ensure setup runs only once
+    let isInitialized = false;
+
+    // All Three.js objects that need to persist
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xffffff); // White background
-    sceneRef.current = scene;
-
-    // Camera setup
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
-    camera.position.set(0, 0, 10);
-    camera.lookAt(0, 0, 0);
-    cameraRef.current = camera;
-
-    // Renderer setup
+    scene.background = new THREE.Color(0xffffff);
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000); // Aspect ratio will be set later
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current,
       antialias: true,
     });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    rendererRef.current = renderer;
-
-    // Lighting setup
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-    scene.add(ambientLight);
-    const pointLight = new THREE.PointLight(0xffffff, 1.5, 100);
-    pointLight.position.set(10, 10, 10);
-    scene.add(pointLight);
-    const rimLight1 = new THREE.PointLight(0x00ffff, 0.8, 50);
-    rimLight1.position.set(-10, 5, 5);
-    scene.add(rimLight1);
-    const rimLight2 = new THREE.PointLight(0xff00ff, 0.6, 50);
-    rimLight2.position.set(5, -10, 5);
-    scene.add(rimLight2);
-
-    // Sphere specifications
-    const sphereSpecs = [
-      {
-        position: [0, 0, 0],
-        radius: 2.0,
-        color: 0x1e40af,
-        orbitRadius: 0,
-        speed: 0,
-        angleOffset: 0,
-      },
-      {
-        position: [2.5, 0, 0],
-        radius: 0.5,
-        color: 0xf97316,
-        orbitRadius: 5.0,
-        speed: (2 * Math.PI) / 20,
-        angleOffset: 0,
-      },
-      {
-        position: [3.5, 0, 0],
-        radius: 0.5,
-        color: 0x16a34a,
-        orbitRadius: 5.0,
-        speed: (2 * Math.PI) / 20,
-        angleOffset: Math.PI / 3,
-      },
-      {
-        position: [4.5, 0, 0],
-        radius: 0.5,
-        color: 0xdc2626,
-        orbitRadius: 5.0,
-        speed: (2 * Math.PI) / 20,
-        angleOffset: (2 * Math.PI) / 3,
-      },
-      {
-        position: [5.5, 0, 0],
-        radius: 0.5,
-        color: 0x9333ea,
-        orbitRadius: 5.0,
-        speed: (2 * Math.PI) / 20,
-        angleOffset: Math.PI,
-      },
-      {
-        position: [6.5, 0, 0],
-        radius: 0.5,
-        color: 0xeab308,
-        orbitRadius: 5.0,
-        speed: (2 * Math.PI) / 20,
-        angleOffset: (4 * Math.PI) / 3,
-      },
-      {
-        position: [7.5, 0, 0],
-        radius: 0.5,
-        color: 0x06b6d4,
-        orbitRadius: 5.0,
-        speed: (2 * Math.PI) / 20,
-        angleOffset: (5 * Math.PI) / 3,
-      },
-    ];
-
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
     const spheres = [];
+    let animationId;
+    let lastTime = performance.now() / 1000;
+    let timeOffset = 0;
+    let hoveredSphereIndex = null;
 
-    sphereSpecs.forEach((spec) => {
-      const sphereGeometry = new THREE.IcosahedronGeometry(spec.radius, 0);
-      const wireframeGeometry = new THREE.WireframeGeometry(sphereGeometry);
-      const material = new THREE.LineBasicMaterial({
-        color: spec.color,
-        transparent: true,
-        opacity: 0.8,
-        linewidth: 1,
+    // --- ONE-TIME SETUP ---
+    const init = () => {
+      if (isInitialized) return;
+
+      const container = containerRef.current;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      // Camera setup
+      camera.aspect = width / height;
+      camera.position.set(0, 0, 10);
+      camera.lookAt(0, 0, 0);
+      camera.updateProjectionMatrix();
+
+      // Renderer setup
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(window.devicePixelRatio);
+
+      // Lighting setup
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+      scene.add(ambientLight);
+      const pointLight = new THREE.PointLight(0xffffff, 1.5, 100);
+      pointLight.position.set(10, 10, 10);
+      scene.add(pointLight);
+
+      // Sphere specifications
+      const sphereSpecs = [
+        {
+          radius: 2.0,
+          color: 0x1e40af,
+          orbitRadius: 0,
+          speed: 0,
+          angleOffset: 0,
+        },
+        {
+          radius: 0.5,
+          color: 0xf97316,
+          orbitRadius: 5.0,
+          speed: (2 * Math.PI) / 20,
+          angleOffset: 0,
+        },
+        {
+          radius: 0.5,
+          color: 0x16a34a,
+          orbitRadius: 5.0,
+          speed: (2 * Math.PI) / 20,
+          angleOffset: Math.PI / 3,
+        },
+        {
+          radius: 0.5,
+          color: 0xdc2626,
+          orbitRadius: 5.0,
+          speed: (2 * Math.PI) / 20,
+          angleOffset: (2 * Math.PI) / 3,
+        },
+        {
+          radius: 0.5,
+          color: 0x9333ea,
+          orbitRadius: 5.0,
+          speed: (2 * Math.PI) / 20,
+          angleOffset: Math.PI,
+        },
+      ];
+
+      sphereSpecs.forEach((spec) => {
+        const sphereGeometry = new THREE.IcosahedronGeometry(spec.radius, 0);
+        const wireframeGeometry = new THREE.WireframeGeometry(sphereGeometry);
+        const material = new THREE.LineBasicMaterial({
+          color: spec.color,
+          transparent: true,
+          opacity: 0.8,
+          linewidth: 1,
+        });
+        const wireframeSphere = new THREE.LineSegments(
+          wireframeGeometry,
+          material
+        );
+        wireframeSphere.userData = {
+          orbitRadius: spec.orbitRadius,
+          speed: spec.speed,
+          currentOrbitAngle: spec.angleOffset,
+        };
+        scene.add(wireframeSphere);
+        spheres.push(wireframeSphere);
       });
 
-      const wireframeSphere = new THREE.LineSegments(
-        wireframeGeometry,
-        material
-      );
-      wireframeSphere.position.set(
-        spec.position[0],
-        spec.position[1],
-        spec.position[2]
-      );
-      wireframeSphere.userData = {
-        orbitRadius: spec.orbitRadius,
-        speed: spec.speed,
-        angleOffset: spec.angleOffset,
-      };
-      scene.add(wireframeSphere);
-      spheres.push(wireframeSphere);
-    });
+      isInitialized = true;
+    };
 
-    spheresRef.current = spheres;
-
+    // --- EVENT HANDLERS ---
     const handleMouseMove = (event) => {
-      mouseRef.current.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouseRef.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-      if (!cameraRef.current) return;
-      raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
-
-      const orbitingSpheres = spheresRef.current.slice(1);
-      const intersects = raycasterRef.current.intersectObjects(orbitingSpheres);
+      raycaster.setFromCamera(mouse, camera);
+      const orbitingSpheres = spheres.slice(1);
+      const intersects = raycaster.intersectObjects(orbitingSpheres);
 
       if (intersects.length > 0) {
         const intersectedSphere = intersects[0].object;
-        const sphereIndex = spheresRef.current.indexOf(intersectedSphere);
-        setHoveredSphere(sphereIndex);
+        hoveredSphereIndex = spheres.indexOf(intersectedSphere);
+        isPausedRef.current = true;
       } else {
-        setHoveredSphere(null);
+        hoveredSphereIndex = null;
+        isPausedRef.current = false;
       }
     };
-    canvasRef.current.addEventListener("mousemove", handleMouseMove);
 
+    const handleResize = () => {
+      const container = containerRef.current;
+      if (!container) return;
+      const newWidth = container.clientWidth;
+      const newHeight = container.clientHeight;
+      camera.aspect = newWidth / newHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(newWidth, newHeight);
+    };
+
+    // --- ANIMATION LOOP ---
     const animate = () => {
-      animationIdRef.current = requestAnimationFrame(animate);
-      const time = performance.now() / 1000;
+      animationId = requestAnimationFrame(animate);
 
-      spheresRef.current.forEach((sphere, index) => {
-        if (index === 0) {
-          // Central sphere pulsation
-          const scale = 1.0 + 0.1 * Math.sin(time * 2);
-          sphere.scale.setScalar(scale);
-          sphere.material.opacity = 0.6 + 0.3 * Math.sin(time * 3);
-        } else {
-          // Orbiting spheres
-          const { orbitRadius, speed, angleOffset } = sphere.userData;
-          const orbitTime = time * speed + angleOffset;
-          const x = orbitRadius * Math.cos(orbitTime);
-          const z = orbitRadius * Math.sin(orbitTime);
-          sphere.position.set(x, 0, z);
+      const currentTime = performance.now() / 1000;
+      const deltaTime = currentTime - lastTime;
+      lastTime = currentTime;
 
-          const pulseOpacity = 0.6 + Math.sin(time * 3 + index) * 0.2;
-          sphere.material.opacity = Math.max(0.3, pulseOpacity);
-        }
+      if (!isPausedRef.current) {
+        timeOffset += deltaTime;
 
-        sphere.rotation.y += 0.01 + index * 0.002;
-        sphere.rotation.x += 0.003;
-      });
+        spheres.forEach((sphere, index) => {
+          if (index === 0) {
+            sphere.scale.setScalar(1.0 + 0.1 * Math.sin(timeOffset * 2));
+            sphere.material.opacity = 0.6 + 0.3 * Math.sin(timeOffset * 3);
+          } else {
+            const { orbitRadius, speed } = sphere.userData;
+            sphere.userData.currentOrbitAngle += speed * deltaTime;
 
-      // Update tooltip position
-      if (
-        hoveredSphere !== null &&
-        tooltipRef.current &&
-        cameraRef.current &&
-        rendererRef.current
-      ) {
-        const sphere = spheresRef.current[hoveredSphere];
+            const x = orbitRadius * Math.cos(sphere.userData.currentOrbitAngle);
+            const z = orbitRadius * Math.sin(sphere.userData.currentOrbitAngle);
+            sphere.position.set(x, 0, z);
+
+            sphere.material.opacity = Math.max(
+              0.3,
+              0.6 + Math.sin(timeOffset * 3 + index) * 0.2
+            );
+          }
+          sphere.rotation.y += (0.01 + index * 0.002) * deltaTime * 60;
+          sphere.rotation.x += 0.003 * deltaTime * 60;
+        });
+      }
+
+      // Tooltip logic runs regardless of pause state
+      if (hoveredSphereIndex !== null && tooltipRef.current) {
+        const sphere = spheres[hoveredSphereIndex];
         const position = new THREE.Vector3();
         sphere.getWorldPosition(position);
-        position.project(cameraRef.current);
-
-        const width = rendererRef.current.domElement.clientWidth;
-        const height = rendererRef.current.domElement.clientHeight;
-
-        const x = (position.x * 0.5 + 0.5) * width;
-        const y = (position.y * -0.5 + 0.5) * height;
-
+        position.project(camera);
+        const x = (position.x * 0.5 + 0.5) * containerRef.current.clientWidth;
+        const y = (position.y * -0.5 + 0.5) * containerRef.current.clientHeight;
         tooltipRef.current.style.left = `${x}px`;
         tooltipRef.current.style.top = `${y}px`;
         tooltipRef.current.style.opacity = "1";
+
+        // Update tooltip content
+        const data = skillData[hoveredSphereIndex];
+        if (data) {
+          tooltipRef.current.innerHTML = `
+             <div class="font-semibold text-sm text-white">${data.name}</div>
+             <div class="text-xs text-gray-200 mt-1">${data.skills}</div>
+           `;
+        }
       } else if (tooltipRef.current) {
         tooltipRef.current.style.opacity = "0";
       }
 
-      if (rendererRef.current && sceneRef.current && cameraRef.current) {
-        renderer.render(sceneRef.current, cameraRef.current);
-      }
+      renderer.render(scene, camera);
     };
+
+    // --- STARTUP AND CLEANUP ---
+    init();
     animate();
 
-    const handleResize = () => {
-      if (!cameraRef.current || !rendererRef.current) return;
-      cameraRef.current.aspect = window.innerWidth / window.innerHeight;
-      cameraRef.current.updateProjectionMatrix();
-      rendererRef.current.setSize(window.innerWidth, window.innerHeight);
-    };
+    const container = containerRef.current;
+    container.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("resize", handleResize);
 
+    // Cleanup function
     return () => {
-      // Cleanup logic
-      if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
+      cancelAnimationFrame(animationId);
+      container.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("resize", handleResize);
-      if (canvasRef.current) {
-        canvasRef.current.removeEventListener("mousemove", handleMouseMove);
-      }
-      // Consider adding cleanup for THREE.js objects (geometries, materials) here
+      // Optional: dispose of Three.js objects to free memory
+      spheres.forEach((sphere) => {
+        scene.remove(sphere);
+        sphere.geometry.dispose();
+        sphere.material.dispose();
+      });
     };
-  }, []);
+  }, []); // Empty dependency array ensures this runs only ONCE
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden ">
+    <div ref={containerRef} className="relative w-full h-full overflow-hidden">
       <canvas ref={canvasRef} className="block" />
-
-      {/* Tooltip */}
       <div
         ref={tooltipRef}
-        className="absolute pointer-events-none bg-gray-900/90 backdrop-blur-sm border border-gray-700 text-white px-4 py-3 rounded-lg shadow-lg transition-opacity duration-200 z-10"
+        className="absolute pointer-events-none bg-gray-900/90 backdrop-blur-sm border border-gray-700 text-white px-4 py-3 rounded-lg shadow-lg transition-opacity duration-200 z-50"
         style={{
           opacity: 0,
           transform: "translate(-50%, -120%)",
         }}
-      >
-        {hoveredSphere && skillData[hoveredSphere] && (
-          <>
-            <div className="font-semibold text-sm text-white">
-              {skillData[hoveredSphere].name}
-            </div>
-            <div className="text-xs text-gray-200 mt-1">
-              {skillData[hoveredSphere].skills}
-            </div>
-          </>
-        )}
-      </div>
+      ></div>
     </div>
   );
 }

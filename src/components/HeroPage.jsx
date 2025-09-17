@@ -3,7 +3,7 @@ import Space from "./Space";
 function HeroPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <nav className="flex justify-center items-center w-full space-x-8 py-6">
+      <nav className="flex justify-center items-center w-full space-x-8 ">
         <a>Home</a>
         <a>Projects</a>
         <a>Skills</a>
