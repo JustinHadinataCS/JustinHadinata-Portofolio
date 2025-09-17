@@ -79,31 +79,30 @@ export default function Space() {
           color: 0xf97316,
           orbitRadius: 5.0,
           speed: (2 * Math.PI) / 20,
-          angleOffset: 0,
+          angleOffset: 0, // 0°
         },
         {
           radius: 0.5,
           color: 0x16a34a,
           orbitRadius: 5.0,
           speed: (2 * Math.PI) / 20,
-          angleOffset: Math.PI / 3,
+          angleOffset: Math.PI / 2, // 90°
         },
         {
           radius: 0.5,
           color: 0xdc2626,
           orbitRadius: 5.0,
           speed: (2 * Math.PI) / 20,
-          angleOffset: (2 * Math.PI) / 3,
+          angleOffset: Math.PI, // 180°
         },
         {
           radius: 0.5,
           color: 0x9333ea,
           orbitRadius: 5.0,
           speed: (2 * Math.PI) / 20,
-          angleOffset: Math.PI,
+          angleOffset: (3 * Math.PI) / 2, // 270°
         },
       ];
-
       sphereSpecs.forEach((spec) => {
         const sphereGeometry = new THREE.IcosahedronGeometry(spec.radius, 0);
         const wireframeGeometry = new THREE.WireframeGeometry(sphereGeometry);
