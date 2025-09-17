@@ -244,7 +244,8 @@ export default function Space() {
   }, []); // Empty dependency array ensures this runs only ONCE
 
   return (
-    <div ref={containerRef} className="relative w-full h-full overflow-hidden">
+    <div ref={containerRef} className="relative w-full h-full">
+      {" "}
       <canvas ref={canvasRef} className="block" />
       <div
         ref={tooltipRef}
