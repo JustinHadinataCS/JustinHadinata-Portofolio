@@ -68,7 +68,7 @@ export default function Space() {
       // Sphere specifications
       const sphereSpecs = [
         {
-          radius: 2.0,
+          radius: 2.5,
           color: 0x1e40af,
           orbitRadius: 0,
           speed: 0,
