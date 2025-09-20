@@ -254,7 +254,7 @@ export default function Space() {
       <canvas ref={canvasRef} className="block" />
       <div
         ref={tooltipRef}
-        className="absolute pointer-events-none bg-gray-900/90 backdrop-blur-sm border border-gray-700 text-white px-4 py-3 rounded-lg shadow-lg transition-opacity duration-200 z-50"
+        className="absolute pointer-events-none bg-purple-500  backdrop-blur-sm  text-white px-4 py-3 rounded-lg shadow-lg transition-opacity duration-200 z-50"
         style={{
           opacity: 0,
           transform: "translate(-50%, -120%)",
