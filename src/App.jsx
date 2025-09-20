@@ -1,9 +1,8 @@
 import "./App.css";
-import HeroPage from "./components/HeroPage";
-import Space from "./components/Space";
+import AppLayout from "./components/AppLayout";
 
 function App() {
-  return <HeroPage />;
+  return <AppLayout />;
 }
 
 export default App;
